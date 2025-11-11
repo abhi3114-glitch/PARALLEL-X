@@ -39,6 +39,7 @@ export default function Index() {
         const msScore = calculateMultiverseScore(todayDeltas);
         setMultiverseScore(Math.round(msScore * 10) / 10);
         
+        // Total divergence (positive means alternate is ahead, negative means you're ahead)
         const totalDivergence = todayDeltas.reduce((sum, d) => sum + d.delta, 0);
         setDivergence(Math.round(totalDivergence * 10) / 10);
         
@@ -55,15 +56,15 @@ export default function Index() {
   }, []);
 
   const radarData = deltas.map(d => ({
-    dimension: d.dim,
-    Real: Math.max(0, d.real_score),
-    Alternate: Math.max(0, d.alt_score)
+    dimension: d.dim.charAt(0).toUpperCase() + d.dim.slice(1),
+    'You (Real)': Math.max(0, Math.abs(d.real_score)),
+    'Alternate Self': Math.max(0, Math.abs(d.alt_score))
   }));
 
   const barData = deltas.map(d => ({
     name: d.dim.charAt(0).toUpperCase() + d.dim.slice(1),
     delta: d.delta,
-    fill: d.delta > 0 ? '#10b981' : '#ef4444'
+    fill: d.delta > 0 ? '#ef4444' : '#10b981'
   }));
 
   return (
@@ -115,26 +116,26 @@ export default function Index() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-purple-200">
-                    Sum of positive deltas today
+                    Areas where alternate is ahead
                   </p>
                 </CardContent>
               </Card>
 
               <Card className="bg-gradient-to-br from-pink-900/50 to-pink-800/30 border-pink-500/20 backdrop-blur">
                 <CardHeader className="pb-3">
-                  <CardDescription className="text-pink-300">Total Divergence</CardDescription>
+                  <CardDescription className="text-pink-300">Total Gap</CardDescription>
                   <CardTitle className="text-3xl text-white flex items-center gap-2">
                     {divergence > 0 ? (
-                      <TrendingUp className="w-6 h-6 text-green-400" />
-                    ) : (
                       <TrendingDown className="w-6 h-6 text-red-400" />
+                    ) : (
+                      <TrendingUp className="w-6 h-6 text-green-400" />
                     )}
                     {divergence > 0 ? '+' : ''}{divergence}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-pink-200">
-                    {divergence > 0 ? 'Alternate is ahead' : 'You are on track!'}
+                    {divergence > 0 ? 'Alternate is ahead' : divergence < 0 ? 'You are ahead!' : 'Perfectly aligned'}
                   </p>
                 </CardContent>
               </Card>
@@ -160,9 +161,9 @@ export default function Index() {
               {/* Radar Chart */}
               <Card className="bg-slate-900/50 border-white/10 backdrop-blur">
                 <CardHeader>
-                  <CardTitle className="text-white">Real vs Alternate Self</CardTitle>
+                  <CardTitle className="text-white">Performance Comparison</CardTitle>
                   <CardDescription className="text-slate-400">
-                    Comparison across all dimensions
+                    You vs your alternate self across all dimensions
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -175,18 +176,18 @@ export default function Index() {
                       />
                       <PolarRadiusAxis angle={90} domain={[0, 'auto']} tick={{ fill: '#94a3b8' }} />
                       <Radar 
-                        name="Real You" 
-                        dataKey="Real" 
-                        stroke="#ef4444" 
-                        fill="#ef4444" 
-                        fillOpacity={0.3} 
+                        name="You (Real)" 
+                        dataKey="You (Real)" 
+                        stroke="#3b82f6" 
+                        fill="#3b82f6" 
+                        fillOpacity={0.4} 
                       />
                       <Radar 
-                        name="Alternate You" 
-                        dataKey="Alternate" 
-                        stroke="#10b981" 
-                        fill="#10b981" 
-                        fillOpacity={0.3} 
+                        name="Alternate Self" 
+                        dataKey="Alternate Self" 
+                        stroke="#a855f7" 
+                        fill="#a855f7" 
+                        fillOpacity={0.4} 
                       />
                       <Legend wrapperStyle={{ color: '#fff' }} />
                     </RadarChart>
@@ -197,9 +198,9 @@ export default function Index() {
               {/* Bar Chart */}
               <Card className="bg-slate-900/50 border-white/10 backdrop-blur">
                 <CardHeader>
-                  <CardTitle className="text-white">Dimension Deltas</CardTitle>
+                  <CardTitle className="text-white">Dimension Gaps</CardTitle>
                   <CardDescription className="text-slate-400">
-                    How far ahead is your alternate self?
+                    Red = Alternate ahead | Green = You ahead
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -221,6 +222,10 @@ export default function Index() {
                           borderRadius: '8px',
                           color: '#fff'
                         }}
+                        formatter={(value: number) => [
+                          value > 0 ? `Alternate +${value}` : `You +${Math.abs(value)}`,
+                          'Gap'
+                        ]}
                       />
                       <Bar dataKey="delta" radius={[8, 8, 0, 0]} />
                     </BarChart>
@@ -246,24 +251,26 @@ export default function Index() {
                           {delta.dim}
                         </span>
                         <span className={`text-sm font-semibold ${
-                          delta.delta > 0 ? 'text-green-400' : delta.delta < 0 ? 'text-red-400' : 'text-slate-400'
+                          delta.delta > 0 ? 'text-red-400' : delta.delta < 0 ? 'text-green-400' : 'text-slate-400'
                         }`}>
-                          {delta.delta > 0 ? '+' : ''}{delta.delta}
+                          {delta.delta > 0 ? `Alternate +${delta.delta}` : delta.delta < 0 ? `You +${Math.abs(delta.delta)}` : 'Tied'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-500 w-16">Real: {delta.real_score}</span>
+                        <span className="text-xs text-slate-500 w-20">You:</span>
                         <Progress 
-                          value={Math.abs(delta.real_score) * 10} 
-                          className="flex-1 h-2"
+                          value={Math.min(100, Math.abs(delta.real_score) * 10)} 
+                          className="flex-1 h-2 bg-slate-800"
                         />
+                        <span className="text-xs text-blue-400 w-12 text-right">{Math.abs(delta.real_score).toFixed(1)}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-500 w-16">Alt: {delta.alt_score}</span>
+                        <span className="text-xs text-slate-500 w-20">Alternate:</span>
                         <Progress 
-                          value={Math.abs(delta.alt_score) * 10} 
-                          className="flex-1 h-2"
+                          value={Math.min(100, Math.abs(delta.alt_score) * 10)} 
+                          className="flex-1 h-2 bg-slate-800"
                         />
+                        <span className="text-xs text-purple-400 w-12 text-right">{Math.abs(delta.alt_score).toFixed(1)}</span>
                       </div>
                     </div>
                   ))}
