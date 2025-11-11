@@ -9,10 +9,5 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "env": {
-    "VITE_GROQ_API_KEY": "@groq_api_key",
-    "VITE_APP_NAME": "Parallel Life Universe",
-    "VITE_APP_VERSION": "2.0.0"
-  }
+  ]
 }

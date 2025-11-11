@@ -1,217 +1,122 @@
-# Parallel Life Universe 🌌
+# PARALLEL-X
 
-An AI-powered self-evolution simulator that compares your real decisions with an alternate self's choices across 6 life dimensions. Built with cutting-edge AI technology using Groq's Llama-3.1-8b-instant model.
+A parallel life universe simulation application built with React, TypeScript, and Vite.
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
-![AI Powered](https://img.shields.io/badge/AI-Groq%20Llama--3.1-purple)
-![License](https://img.shields.io/badge/license-MIT-green)
+## Features
 
-## ✨ Features
+- Interactive decision logging and tracking
+- AI-powered insights using Groq API
+- Beautiful UI with Shadcn components
+- Responsive design with Tailwind CSS
 
-### Core Functionality
-- **Decision Logging**: Track your daily choices across multiple life categories
-- **AI-Powered Alternate Self**: Groq's Llama-3.1-8b-instant generates intelligent alternate decisions
-- **6-Dimension Analysis**: Health, Skills, Discipline, Social, Finance, and Mood
-- **Reality Sync Tasks**: AI-generated actionable tasks to bridge the gap
-- **Progress Tracking**: Streaks, badges, and comprehensive analytics
-
-### AI Enhancements
-- **Intelligent Decision Analysis**: AI understands context and generates realistic alternatives
-- **Personalized Insights**: Real-time AI coaching and recommendations
-- **Comprehensive Life Analysis**: Strengths, weaknesses, and motivational guidance
-- **Natural Language Explanations**: Clear rationale for every alternate decision
-
-### Visualization
-- **Radar Charts**: Compare performance across all dimensions
-- **Bar Charts**: Visualize gaps between you and your alternate self
-- **Progress Tracking**: Beautiful UI with real-time updates
-- **Responsive Design**: Works seamlessly on desktop and mobile
-
-## 🚀 Technology Stack
-
-- **Frontend**: React 19 + TypeScript + Vite
-- **UI Framework**: shadcn/ui + Tailwind CSS
-- **AI Engine**: Groq SDK (Llama-3.1-8b-instant)
-- **Charts**: Recharts
-- **State Management**: Zustand
-- **Routing**: React Router v6
-- **Backend**: Supabase (optional)
-- **Deployment**: Vercel
-
-## 📦 Installation
+## Getting Started
 
 ### Prerequisites
+
 - Node.js 18+ 
-- pnpm 8+
-- Groq API Key ([Get one here](https://console.groq.com))
+- pnpm 8.10.0+
 
-### Setup
+### Installation
 
-1. **Clone the repository**
+1. Clone the repository:
 ```bash
 git clone https://github.com/abhi3114-glitch/PARALLEL-X.git
 cd PARALLEL-X
 ```
 
-2. **Install dependencies**
+2. Install dependencies:
 ```bash
 pnpm install
 ```
 
-3. **Configure environment variables**
+3. Create a `.env` file based on `.env.example`:
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and add your Groq API key:
-```env
-VITE_GROQ_API_KEY=your_groq_api_key_here
+4. Add your API keys to the `.env` file:
+```
+VITE_GROQ_API_KEY=your_actual_groq_api_key
 ```
 
-4. **Start development server**
+5. Run the development server:
 ```bash
 pnpm run dev
 ```
 
-5. **Build for production**
+## Deployment on Vercel
+
+### Method 1: Using Vercel Dashboard (Recommended)
+
+1. Push your code to GitHub
+2. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+3. Click "Add New Project"
+4. Import your GitHub repository
+5. Configure environment variables:
+   - Add `VITE_GROQ_API_KEY` with your Groq API key
+   - Add `VITE_APP_NAME` with value `Parallel Life Universe`
+   - Add `VITE_APP_VERSION` with value `2.0.0`
+6. Click "Deploy"
+
+### Method 2: Using Vercel CLI
+
+1. Install Vercel CLI:
 ```bash
-pnpm run build
+npm i -g vercel
 ```
 
-## 🔑 Getting Your Groq API Key
-
-1. Visit [Groq Console](https://console.groq.com)
-2. Sign up or log in
-3. Navigate to API Keys section
-4. Create a new API key
-5. Copy and paste it into your `.env` file
-
-## 🎯 Usage
-
-### Logging Decisions
-1. Click "Log New Decision"
-2. Describe what you did
-3. Select category and intensity
-4. Rate how it felt
-5. Add optional context for better AI analysis
-
-### Viewing Insights
-- Dashboard shows real-time comparison with alternate self
-- AI insights appear automatically when enabled
-- Click "Refresh Analysis" on profile for updated recommendations
-
-### Completing Sync Tasks
-- Navigate to "Sync Tasks"
-- Complete tasks to close the gap with your alternate self
-- Track progress and earn badges
-
-## 🏗️ Project Structure
-
-```
-PARALLEL-X/
-├── src/
-│   ├── components/
-│   │   ├── ui/              # shadcn/ui components
-│   │   └── DashboardLayout.tsx
-│   ├── pages/
-│   │   ├── Index.tsx        # Dashboard
-│   │   ├── LogDecision.tsx  # Decision logging
-│   │   ├── SyncTasks.tsx    # Task management
-│   │   └── Profile.tsx      # User profile
-│   ├── lib/
-│   │   ├── groq.ts          # AI integration
-│   │   ├── simulation.ts    # Decision simulation
-│   │   ├── supabase.ts      # Backend client
-│   │   └── utils.ts         # Utilities
-│   ├── App.tsx
-│   └── main.tsx
-├── public/
-├── .env.example
-├── vercel.json
-└── package.json
-```
-
-## 🚢 Deployment
-
-### Vercel (Recommended)
-
-1. **Install Vercel CLI**
+2. Login to Vercel:
 ```bash
-pnpm add -g vercel
+vercel login
 ```
 
-2. **Deploy**
+3. Deploy:
 ```bash
 vercel
 ```
 
-3. **Add environment variables in Vercel dashboard**
-- Go to Project Settings → Environment Variables
-- Add `VITE_GROQ_API_KEY` with your API key
-
-### Manual Deployment
-
-1. Build the project:
+4. Add environment variables via CLI or dashboard:
 ```bash
-pnpm run build
+vercel env add VITE_GROQ_API_KEY
 ```
 
-2. Deploy the `dist` folder to any static hosting service
+### Important Notes for Vercel Deployment
 
-## 🎨 Customization
+- **Environment Variables**: Make sure to add all required environment variables in the Vercel dashboard under Project Settings → Environment Variables
+- **Build Settings**: The `vercel.json` is already configured with the correct build settings
+- **Framework**: Vite is automatically detected
+- **Output Directory**: `dist` (already configured)
 
-### Themes
-Edit `src/index.css` to customize colors and themes.
+## Environment Variables
 
-### Policy Matrix
-Modify `src/lib/simulation.ts` to adjust how decisions impact dimensions.
+Required:
+- `VITE_GROQ_API_KEY` - Your Groq API key for AI features
 
-### AI Prompts
-Customize AI behavior in `src/lib/groq.ts` by editing the prompt templates.
+Optional:
+- `VITE_SUPABASE_URL` - Supabase project URL (if using Supabase)
+- `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key (if using Supabase)
+- `VITE_APP_NAME` - Application name (default: "Parallel Life Universe")
+- `VITE_APP_VERSION` - Application version (default: "2.0.0")
 
-## 🔒 Privacy & Security
+## Scripts
 
-- All data stored locally in browser by default
-- API keys never exposed to frontend (use environment variables)
-- Optional Supabase integration for cloud sync
-- No personal data collected without consent
+- `pnpm run dev` - Start development server
+- `pnpm run build` - Build for production
+- `pnpm run preview` - Preview production build
+- `pnpm run lint` - Run ESLint
 
-## 🤝 Contributing
+## Tech Stack
 
-Contributions are welcome! Please follow these steps:
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- Shadcn UI
+- Groq SDK
+- React Router
+- Zustand (State Management)
+- React Query
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## License
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- [Groq](https://groq.com) for lightning-fast AI inference
-- [shadcn/ui](https://ui.shadcn.com) for beautiful components
-- [Recharts](https://recharts.org) for data visualization
-- [Supabase](https://supabase.com) for backend infrastructure
-
-## 📧 Support
-
-For support, email support@parallellifeuniverse.com or open an issue on GitHub.
-
-## 🗺️ Roadmap
-
-- [ ] Mobile app (React Native)
-- [ ] Social features (compare with friends)
-- [ ] Advanced AI models (GPT-4, Claude)
-- [ ] Historical trend analysis
-- [ ] Export data functionality
-- [ ] Gamification enhancements
-
----
-
-Made with ❤️ by the Parallel Life Universe Team
-
-**Star ⭐ this repo if you find it helpful!**
+MIT
