@@ -3,6 +3,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Decision, DailyDelta, mockUser } from '@/lib/supabase';
 import { 
   simulateDailyDeltas, 
@@ -10,8 +11,9 @@ import {
   calculateMultiverseScore,
   generateSyncTasks 
 } from '@/lib/simulation';
+import { generateAIInsights, AIInsight } from '@/lib/groq';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { TrendingUp, TrendingDown, Zap, Target, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Zap, Target, Activity, AlertCircle, CheckCircle, Info, Lightbulb, Loader2, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Index() {
@@ -19,20 +21,33 @@ export default function Index() {
   const [deltas, setDeltas] = useState<DailyDelta[]>([]);
   const [multiverseScore, setMultiverseScore] = useState(0);
   const [divergence, setDivergence] = useState(0);
+  const [insights, setInsights] = useState<AIInsight[]>([]);
+  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
 
   useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
     try {
+      // Check if AI is enabled
+      const groqKey = import.meta.env.VITE_GROQ_API_KEY;
+      setAiEnabled(!!groqKey && groqKey !== 'your_groq_api_key_here');
+
       // Load decisions from localStorage
       const storedDecisions = JSON.parse(localStorage.getItem('decisions') || '[]');
       setDecisions(storedDecisions);
 
       if (storedDecisions.length > 0) {
-        // Generate alternate decisions
-        const altDecisions = storedDecisions.map(generateAlternateDecision);
+        // Generate alternate decisions (AI-powered or rule-based)
+        const altDecisions = await Promise.all(
+          storedDecisions.map((d: Decision) => generateAlternateDecision(d))
+        );
         
         // Simulate today's deltas
         const today = new Date().toISOString().split('T')[0];
-        const todayDeltas = simulateDailyDeltas(storedDecisions, altDecisions, today);
+        const todayDeltas = await simulateDailyDeltas(storedDecisions, altDecisions, today);
         setDeltas(todayDeltas);
         
         // Calculate scores
@@ -49,11 +64,42 @@ export default function Index() {
           const newTasks = generateSyncTasks(todayDeltas);
           localStorage.setItem('syncTasks', JSON.stringify(newTasks));
         }
+
+        // Generate AI insights
+        if (aiEnabled) {
+          setIsLoadingInsights(true);
+          try {
+            const aiInsights = await generateAIInsights(storedDecisions, todayDeltas);
+            setInsights(aiInsights);
+          } catch (error) {
+            console.error('Failed to generate insights:', error);
+          } finally {
+            setIsLoadingInsights(false);
+          }
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error);
     }
-  }, []);
+  };
+
+  const getInsightIcon = (type: string) => {
+    switch (type) {
+      case 'warning': return AlertCircle;
+      case 'success': return CheckCircle;
+      case 'tip': return Lightbulb;
+      default: return Info;
+    }
+  };
+
+  const getInsightColor = (type: string) => {
+    switch (type) {
+      case 'warning': return 'border-red-500/30 bg-red-900/20';
+      case 'success': return 'border-green-500/30 bg-green-900/20';
+      case 'tip': return 'border-yellow-500/30 bg-yellow-900/20';
+      default: return 'border-blue-500/30 bg-blue-900/20';
+    }
+  };
 
   const radarData = deltas.map(d => ({
     dimension: d.dim.charAt(0).toUpperCase() + d.dim.slice(1),
@@ -73,8 +119,14 @@ export default function Index() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 flex items-center gap-2">
               Welcome back, {mockUser.display_name}
+              {aiEnabled && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-full">
+                  <Sparkles className="w-3 h-3" />
+                  AI Powered
+                </span>
+              )}
             </h1>
             <p className="text-slate-400">
               Compare your reality with your alternate self
@@ -104,6 +156,38 @@ export default function Index() {
           </Card>
         ) : (
           <>
+            {/* AI Insights */}
+            {aiEnabled && (
+              <div className="space-y-3">
+                {isLoadingInsights ? (
+                  <Card className="bg-slate-900/50 border-white/10 backdrop-blur">
+                    <CardContent className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 text-purple-400 animate-spin mr-2" />
+                      <span className="text-slate-400">Generating AI insights...</span>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  insights.map((insight, index) => {
+                    const Icon = getInsightIcon(insight.type);
+                    return (
+                      <Alert key={index} className={`${getInsightColor(insight.type)} border backdrop-blur`}>
+                        <Icon className="h-4 w-4" />
+                        <AlertTitle className="text-white font-semibold">{insight.title}</AlertTitle>
+                        <AlertDescription className="text-slate-300">
+                          {insight.message}
+                          {insight.actionable && insight.suggestedAction && (
+                            <div className="mt-2 text-sm font-medium text-purple-300">
+                              💡 {insight.suggestedAction}
+                            </div>
+                          )}
+                        </AlertDescription>
+                      </Alert>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 border-purple-500/20 backdrop-blur">

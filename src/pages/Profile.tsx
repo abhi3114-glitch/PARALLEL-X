@@ -3,15 +3,28 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { mockUser, Decision, SyncTask } from '@/lib/supabase';
-import { Flame, Trophy, Target, Calendar, Award, TrendingUp } from 'lucide-react';
+import { generateAIAnalysis, AIAnalysis } from '@/lib/groq';
+import { Flame, Trophy, Target, Calendar, Award, TrendingUp, Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 export default function Profile() {
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [streak, setStreak] = useState(0);
   const [badges, setBadges] = useState<string[]>([]);
+  const [analysis, setAnalysis] = useState<AIAnalysis | null>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
 
   useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const loadProfileData = async () => {
+    const groqKey = import.meta.env.VITE_GROQ_API_KEY;
+    setAiEnabled(!!groqKey && groqKey !== 'your_groq_api_key_here');
+
     const storedDecisions = JSON.parse(localStorage.getItem('decisions') || '[]');
     setDecisions(storedDecisions);
 
@@ -26,45 +39,86 @@ export default function Profile() {
     if (storedDecisions.length >= 1) earnedBadges.push('First Decision');
     if (storedDecisions.length >= 5) earnedBadges.push('Getting Started');
     if (storedDecisions.length >= 10) earnedBadges.push('Committed');
+    if (storedDecisions.length >= 25) earnedBadges.push('Dedicated');
     if (uniqueDays.size >= 3) earnedBadges.push('3-Day Streak');
     if (uniqueDays.size >= 7) earnedBadges.push('Week Warrior');
+    if (uniqueDays.size >= 30) earnedBadges.push('Month Master');
     
     const syncTasks: SyncTask[] = JSON.parse(localStorage.getItem('syncTasks') || '[]');
     const completedTasks = syncTasks.filter((t: SyncTask) => t.completed_at);
     if (completedTasks.length >= 1) earnedBadges.push('First Sync');
     if (completedTasks.length >= 5) earnedBadges.push('Reality Shifter');
+    if (completedTasks.length >= 10) earnedBadges.push('Dimension Master');
 
     setBadges(earnedBadges);
-  }, []);
+
+    // Generate AI analysis if enabled and has data
+    if (aiEnabled && storedDecisions.length > 0) {
+      await generateAnalysis(storedDecisions, completedTasks.length);
+    }
+  };
+
+  const generateAnalysis = async (decisions: Decision[], completedTasks: number) => {
+    setIsLoadingAnalysis(true);
+    try {
+      const deltas = JSON.parse(localStorage.getItem('deltas') || '[]');
+      const aiAnalysis = await generateAIAnalysis(decisions, deltas, completedTasks);
+      setAnalysis(aiAnalysis);
+    } catch (error) {
+      console.error('Failed to generate analysis:', error);
+    } finally {
+      setIsLoadingAnalysis(false);
+    }
+  };
 
   const badgeIcons: Record<string, string> = {
     'First Decision': '🎯',
     'Getting Started': '🚀',
     'Committed': '💪',
-    '3-Day Streak': '🔥',
-    'Week Warrior': '⚡',
+    'Dedicated': '🔥',
+    '3-Day Streak': '⚡',
+    'Week Warrior': '👑',
+    'Month Master': '🏆',
     'First Sync': '✨',
-    'Reality Shifter': '🌟'
+    'Reality Shifter': '🌟',
+    'Dimension Master': '💫'
   };
 
   const stats = [
     { label: 'Total Decisions', value: decisions.length, icon: Target, color: 'text-purple-400' },
     { label: 'Current Streak', value: `${streak} days`, icon: Flame, color: 'text-orange-400' },
     { label: 'Badges Earned', value: badges.length, icon: Award, color: 'text-yellow-400' },
-    { label: 'Rank', value: '#127', icon: Trophy, color: 'text-blue-400' }
+    { label: 'Overall Score', value: analysis?.overallScore || '--', icon: Trophy, color: 'text-blue-400' }
   ];
 
   return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-            Your Profile
-          </h1>
-          <p className="text-slate-400">
-            Track your progress and achievements
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              Your Profile
+            </h1>
+            <p className="text-slate-400">
+              Track your progress and achievements
+            </p>
+          </div>
+          {aiEnabled && decisions.length > 0 && (
+            <Button
+              onClick={() => generateAnalysis(decisions, JSON.parse(localStorage.getItem('syncTasks') || '[]').filter((t: SyncTask) => t.completed_at).length)}
+              disabled={isLoadingAnalysis}
+              variant="outline"
+              className="bg-slate-800/50 border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+            >
+              {isLoadingAnalysis ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              )}
+              Refresh Analysis
+            </Button>
+          )}
         </div>
 
         {/* Profile Card */}
@@ -77,8 +131,14 @@ export default function Profile() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 text-center md:text-left">
-                <h2 className="text-2xl font-bold text-white mb-1">
+                <h2 className="text-2xl font-bold text-white mb-1 flex items-center gap-2 justify-center md:justify-start">
                   {mockUser.display_name}
+                  {aiEnabled && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-full">
+                      <Sparkles className="w-3 h-3" />
+                      AI Powered
+                    </span>
+                  )}
                 </h2>
                 <p className="text-purple-200 mb-4">@{mockUser.username}</p>
                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
@@ -112,6 +172,79 @@ export default function Profile() {
             </Card>
           ))}
         </div>
+
+        {/* AI Analysis */}
+        {aiEnabled && analysis && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-slate-900/50 border-white/10 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-green-400" />
+                  Strengths & Weaknesses
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-green-400 mb-2">✓ Strengths</h4>
+                  <ul className="space-y-1">
+                    {analysis.strengths.map((strength, idx) => (
+                      <li key={idx} className="text-sm text-slate-300">• {strength}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-red-400 mb-2">⚠ Areas to Improve</h4>
+                  <ul className="space-y-1">
+                    {analysis.weaknesses.map((weakness, idx) => (
+                      <li key={idx} className="text-sm text-slate-300">• {weakness}</li>
+                    ))}
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-900/50 border-white/10 backdrop-blur">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-400" />
+                  AI Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {analysis.recommendations.map((rec, idx) => (
+                  <div key={idx} className="flex items-start gap-2">
+                    <span className="text-purple-400 mt-0.5">💡</span>
+                    <p className="text-sm text-slate-300">{rec}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Motivational Message */}
+        {aiEnabled && analysis && (
+          <Card className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border-purple-500/20 backdrop-blur">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-purple-500/20 rounded-lg">
+                  <Sparkles className="w-6 h-6 text-purple-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-white font-semibold mb-2">Your Journey</h3>
+                  <p className="text-purple-200">{analysis.motivationalMessage}</p>
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-purple-300">Overall Progress</span>
+                      <span className="text-sm font-bold text-white">{analysis.overallScore}%</span>
+                    </div>
+                    <Progress value={analysis.overallScore} className="h-2" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Badges */}
         <Card className="bg-slate-900/50 border-white/10 backdrop-blur">
